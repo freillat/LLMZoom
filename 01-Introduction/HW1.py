@@ -1,6 +1,6 @@
 import requests
 from elasticsearch import Elasticsearch
-from tqdm.auto import tqdm
+import tiktoken
 
 docs_url = 'https://github.com/DataTalksClub/llm-zoomcamp/blob/main/01-intro/documents.json?raw=1'
 docs_response = requests.get(docs_url)
@@ -36,9 +36,9 @@ index_settings = {
 
 index_name = "course-questions"
 
-# es_client.indices.create(index=index_name, body=index_settings)
-# for doc in documents:
-#     es_client.index(index=index_name, document=doc)
+es_client.indices.create(index=index_name, body=index_settings)
+for doc in documents:
+    es_client.index(index=index_name, document=doc)
 
 query = "How do execute a command on a Kubernetes pod?"
 
@@ -98,17 +98,6 @@ Q: {question}
 A: {text}
 """.strip()
 
-# context_entries = []
-
-# for hit in response['hits']['hits']:
-#     doc = hit['_source']
-#     question = doc.get('question', '') # Use .get() to safely access fields
-#     text = doc.get('text', '')
-#     context_entry = context_template.format(question=question, text=text)
-#     context_entries.append(context_entry)
-
-# context = "\n\n".join(context_entries)
-
 context = ""   
 for hit in response['hits']['hits']:
     doc = hit['_source']
@@ -127,3 +116,8 @@ CONTEXT:
 prompt = prompt_template.format(question=query, context=context).strip()
 
 print(len(prompt))
+
+encoding = tiktoken.encoding_for_model("gpt-4o")
+tokens = encoding.encode(prompt)
+num_tokens = len(tokens)
+print(f"Number of tokens: {num_tokens}")
