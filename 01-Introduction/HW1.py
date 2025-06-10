@@ -16,10 +16,8 @@ for course in documents_raw:
         documents.append(doc)
 
 print(f"Loaded {len(documents)} documents.")
-print(documents[0])
 
 es_client = Elasticsearch("http://localhost:9200")
-print(es_client.info())
 
 index_settings = {
     "settings": {
@@ -68,3 +66,64 @@ response = es_client.search(index=index_name, body=search_query)
 top_score = response['hits']['hits'][0]['_score']
 
 print(top_score)
+
+query = "How do copy a file to a Docker container?"
+
+search_query = {
+    "size": 3,
+    "query": {
+        "bool": {
+            "must": {
+                "multi_match": {
+                    "query": query,
+                    "fields": ["question^4", "text"],
+                    "type": "best_fields"
+                }
+            },
+            "filter": {
+                "term": {
+                    "course": "machine-learning-zoomcamp"
+                }
+            }
+        }
+    }
+}
+
+response = es_client.search(index=index_name, body=search_query)
+
+print(response['hits']['hits'][2])
+
+context_template = """
+Q: {question}
+A: {text}
+""".strip()
+
+# context_entries = []
+
+# for hit in response['hits']['hits']:
+#     doc = hit['_source']
+#     question = doc.get('question', '') # Use .get() to safely access fields
+#     text = doc.get('text', '')
+#     context_entry = context_template.format(question=question, text=text)
+#     context_entries.append(context_entry)
+
+# context = "\n\n".join(context_entries)
+
+context = ""   
+for hit in response['hits']['hits']:
+    doc = hit['_source']
+    context = context + f"Q: {doc['question']}\nA: {doc['text']}\n\n"
+   
+prompt_template = """
+You're a course teaching assistant. Answer the QUESTION based on the CONTEXT from the FAQ database.
+Use only the facts from the CONTEXT when answering the QUESTION.
+
+QUESTION: {question}
+
+CONTEXT:
+{context}
+""".strip()
+    
+prompt = prompt_template.format(question=query, context=context).strip()
+
+print(len(prompt))
