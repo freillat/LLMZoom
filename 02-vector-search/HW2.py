@@ -92,3 +92,16 @@ for course in documents_raw:
     for doc in course['documents']:
         doc['course'] = course_name
         documents.append(doc)
+
+V = [ ]
+for doc in documents:
+    text = doc['question'] + ' ' + doc['text']
+    V.append(np.array(list(model.embed(text)))[0])
+V = np.array(V)
+
+# text = doc['question'] + ' ' + doc['text']
+
+query = 'I just discovered the course. Can I join now?'
+q = np.array(list(model.embed(query)))[0]
+
+print(np.dot(V,q).max())
