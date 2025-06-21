@@ -1,7 +1,8 @@
 # from qdrant_client import QdrantClient, models
 # client = QdrantClient("http://localhost:6333")
 
-# import requests
+import json
+import requests
 
 from fastembed import TextEmbedding
 import numpy as np
@@ -66,3 +67,28 @@ V = np.array(V)
 print(np.dot(V,q2))
 
 # Question 5
+
+EMBEDDING_DIMENSIONALITY = 384
+
+for model in TextEmbedding.list_supported_models():
+    if model["dim"] == EMBEDDING_DIMENSIONALITY:
+        print(json.dumps(model, indent=2))
+
+model = TextEmbedding(model_name="BAAI/bge-small-en")
+
+# Question 6
+
+docs_url = 'https://github.com/alexeygrigorev/llm-rag-workshop/raw/main/notebooks/documents.json'
+docs_response = requests.get(docs_url)
+documents_raw = docs_response.json()
+
+documents = []
+
+for course in documents_raw:
+    course_name = course['course']
+    if course_name != 'machine-learning-zoomcamp':
+        continue
+
+    for doc in course['documents']:
+        doc['course'] = course_name
+        documents.append(doc)
