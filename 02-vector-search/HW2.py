@@ -46,3 +46,23 @@ documents = [{'text': "Yes, even if you don't register, you're still eligible to
   'section': 'General course-related questions',
   'question': 'How can we contribute to the course?',
   'course': 'data-engineering-zoomcamp'}]
+
+V = [ ]
+for doc in documents:
+    V.append(np.array(list(model.embed(doc['text'])))[0])
+V = np.array(V)
+
+print(np.dot(V,q2))
+
+# Question 4
+
+V = [ ]
+
+for doc in documents:
+    full_text = doc['question'] + ' ' + doc['text']
+    V.append(np.array(list(model.embed(full_text)))[0])
+V = np.array(V)
+
+print(np.dot(V,q2))
+
+# Question 5
