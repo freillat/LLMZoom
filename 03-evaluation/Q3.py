@@ -55,7 +55,7 @@ def evaluate(ground_truth, vector_search_index, pipeline):
 texts = []
 
 for doc in documents:
-    t = doc['question']
+    t = doc['question'] + ' ' + doc['text']
     texts.append(t)
 
 pipeline = make_pipeline(
