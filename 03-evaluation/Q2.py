@@ -3,6 +3,10 @@ import pandas as pd
 import minsearch
 
 from tqdm.auto import tqdm
+from minsearch import VectorSearch
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.pipeline import make_pipeline
 
 url_prefix = 'https://raw.githubusercontent.com/DataTalksClub/llm-zoomcamp/main/03-evaluation/'
 docs_url = url_prefix + 'search_evaluation/documents-with-ids.json'
@@ -31,12 +35,15 @@ def mrr(relevance_total):
 
     return total_score / len(relevance_total)
 
-def evaluate(ground_truth, search_function):
+def evaluate(ground_truth, vector_search_index, pipeline):
     relevance_total = []
 
     for q in tqdm(ground_truth):
         doc_id = q['document']
-        results = search_function(q['question'],q['course'])
+        query_text = q['question']
+        course_filter = q['course']
+        query_vector = pipeline.transform([query_text])
+        results = vector_search_index.search(query_vector, filter_dict={'course': course_filter})
         relevance = [d['id'] == doc_id for d in results]
         relevance_total.append(relevance)
 
@@ -45,23 +52,19 @@ def evaluate(ground_truth, search_function):
         'mrr': mrr(relevance_total),
     }
 
-def minsearch_search(query, course):
-    boost = {'question': 1.5, 'section': 0.1}
+texts = []
 
-    results = index.search(
-        query=query,
-        filter_dict={'course': course},
-        boost_dict=boost,
-        num_results=5
-    )
+for doc in documents:
+    t = doc['question']
+    texts.append(t)
 
-    return results
-
-index = minsearch.Index(
-    text_fields=["question", "text", "section"],
-    keyword_fields=["course", "id"]
+pipeline = make_pipeline(
+    TfidfVectorizer(min_df=3),
+    TruncatedSVD(n_components=128, random_state=1)
 )
+X = pipeline.fit_transform(texts)
 
-index.fit(documents)
+vindex = VectorSearch(keyword_fields={'course'})
+vindex.fit(X, documents)
 
-print(evaluate(ground_truth, minsearch_search))
+print(evaluate(ground_truth, vindex, pipeline))
